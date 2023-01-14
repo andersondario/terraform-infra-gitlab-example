@@ -57,8 +57,7 @@ deploy-prod:
       - ENV_NAME: [ prod ]
   only:
     - master
-  when: 
-    - manual
+  when: manual
   dependencies:
     - deploy-non-prod
 
