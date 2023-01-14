@@ -1,0 +1,66 @@
+image:
+  name: hashicorp/terraform:1.3.2
+  entrypoint:
+    - "/usr/bin/env"
+    - "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+stages:
+- test
+- deploy-non-prod
+- deploy-prod
+
+before_script:
+- cp $SA /tmp/credentials.json
+- export GOOGLE_APPLICATION_CREDENTIALS="/tmp/credentials.json"
+
+.deploy: &deploy
+  script:
+    - terraform init
+    - terraform plan -lock=false -out plan.json
+    - terraform apply -auto-approve plan.json
+
+test:
+  stage: test
+  script: 
+    - terraform fmt --recursive -check
+    - cd infra/$ENV_NAME
+    - terraform init
+    - terraform validate
+    - terraform plan -lock=false
+  parallel:
+    matrix: 
+      - ENV_NAME: [ dev, stage, prod ] 
+  only:
+    - master
+    - merge_requests
+
+deploy-non-prod:
+  stage: deploy-non-prod
+  script:
+    - cd infra/$ENV_NAME
+    - !reference [.deploy, script]
+  parallel:
+    matrix:
+      - ENV_NAME: [ dev, stage ]
+  only:
+    - master
+  dependencies:
+    - test
+
+deploy-prod:
+  stage: deploy-prod
+  script:
+    - cd infra/$ENV_NAME
+    - !reference [.deploy, script]
+  parallel:
+    matrix:
+      - ENV_NAME: [ prod ]
+  only:
+    - master
+  when: 
+    - manual
+  dependencies:
+    - deploy-non-prod
+
+after_script:
+- rm /tmp/credentials.json
