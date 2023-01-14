@@ -31,7 +31,7 @@ test:
     matrix: 
       - ENV_NAME: [ dev, stage, prod ] 
   only:
-    - master
+    - main
     - merge_requests
 
 deploy-non-prod:
@@ -43,7 +43,7 @@ deploy-non-prod:
     matrix:
       - ENV_NAME: [ dev, stage ]
   only:
-    - master
+    - main
   dependencies:
     - test
 
@@ -56,7 +56,7 @@ deploy-prod:
     matrix:
       - ENV_NAME: [ prod ]
   only:
-    - master
+    - main
   when: manual
   dependencies:
     - deploy-non-prod
